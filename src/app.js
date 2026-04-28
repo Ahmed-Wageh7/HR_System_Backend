@@ -81,6 +81,13 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'success', data: { uptime: process.uptime() } });
 });
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: `${env.appName} backend is running`
+  });
+});
+
 app.use('/api/v1', v1Router);
 app.use('/api', v1Router);
 
