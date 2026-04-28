@@ -49,11 +49,38 @@ const env = {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     apiKey: process.env.CLOUDINARY_API_KEY,
     apiSecret: process.env.CLOUDINARY_API_SECRET
-  }
+  },
+  vercelUrl: process.env.VERCEL_URL
 };
 
 env.isProduction = env.nodeEnv === 'production';
 env.isDevelopment = env.nodeEnv === 'development';
+env.isVercel = process.env.VERCEL === '1' || Boolean(env.vercelUrl);
+env.isServerless = env.isVercel || process.env.SERVERLESS === 'true';
+env.allowedOrigins = env.clientUrl
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+env.hasCloudinaryConfig = Boolean(
+  env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret
+);
+env.useCloudinaryUploads = env.hasCloudinaryConfig && (env.isProduction || env.isServerless);
+env.enableQueues =
+  process.env.ENABLE_QUEUES !== undefined
+    ? process.env.ENABLE_QUEUES === 'true'
+    : !env.isServerless;
+env.enableSockets =
+  process.env.ENABLE_SOCKETS !== undefined
+    ? process.env.ENABLE_SOCKETS === 'true'
+    : !env.isServerless;
+env.runDbSyncOnBoot =
+  process.env.RUN_DB_SYNC_ON_BOOT !== undefined
+    ? process.env.RUN_DB_SYNC_ON_BOOT === 'true'
+    : !env.isServerless;
+env.runDbSeedOnBoot =
+  process.env.RUN_DB_SEED_ON_BOOT !== undefined
+    ? process.env.RUN_DB_SEED_ON_BOOT === 'true'
+    : !env.isServerless;
 
 // Backward-compatible aliases for older code paths that still use flat env names.
 env.jwtSecret = env.jwt.secret;
@@ -82,7 +109,9 @@ if (!env.cookie.secret) throw new Error('COOKIE_SECRET is required');
 
 if (env.isProduction) {
   if (!env.smtp.host) throw new Error('SMTP_HOST is required in production');
-  if (!env.cloudinary.cloudName) throw new Error('CLOUDINARY_CLOUD_NAME is required in production');
+  if (env.isServerless && !env.hasCloudinaryConfig) {
+    throw new Error('Cloudinary configuration is required for serverless production uploads');
+  }
 }
 
 env.cookies = {

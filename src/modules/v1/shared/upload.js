@@ -9,25 +9,27 @@ const ensureDir = (dirPath) => {
   fs.mkdirSync(dirPath, { recursive: true });
 };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const date = new Date();
-    const dir = path.join(
-      process.cwd(),
-      env.uploadDir,
-      req.uploadResource || 'misc',
-      String(date.getFullYear()),
-      String(date.getMonth() + 1).padStart(2, '0')
-    );
+const storage = env.useCloudinaryUploads
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        const date = new Date();
+        const dir = path.join(
+          process.cwd(),
+          env.uploadDir,
+          req.uploadResource || 'misc',
+          String(date.getFullYear()),
+          String(date.getMonth() + 1).padStart(2, '0')
+        );
 
-    ensureDir(dir);
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const extension = path.extname(file.originalname).toLowerCase();
-    cb(null, `${uuidv4()}-${Date.now()}${extension}`);
-  }
-});
+        ensureDir(dir);
+        cb(null, dir);
+      },
+      filename: (req, file, cb) => {
+        const extension = path.extname(file.originalname).toLowerCase();
+        cb(null, `${uuidv4()}-${Date.now()}${extension}`);
+      }
+    });
 
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();

@@ -19,6 +19,8 @@ const monthlyReportSchema = new mongoose.Schema(
 const documentSchema = new mongoose.Schema(
   {
     name: String,
+    url: String,
+    publicId: String,
     path: String,
     mimeType: String,
     uploadedAt: {

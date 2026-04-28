@@ -4,17 +4,16 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import env from '../../config/env.service.js';
 
 const logDir = path.join(process.cwd(), 'logs');
+const loggerTransports = [
+  new transports.Console({
+    format: env.isProduction
+      ? format.combine(format.timestamp(), format.json())
+      : format.combine(format.colorize({ all: true }), format.simple())
+  })
+];
 
-const logger = createLogger({
-  level: env.isProduction ? 'info' : 'debug',
-  format: format.combine(format.timestamp(), format.errors({ stack: true }), format.json()),
-  defaultMeta: { service: 'hr-management-system' },
-  transports: [
-    new transports.Console({
-      format: env.isProduction
-        ? format.combine(format.timestamp(), format.json())
-        : format.combine(format.colorize({ all: true }), format.simple())
-    }),
+if (!env.isServerless) {
+  loggerTransports.push(
     new DailyRotateFile({
       dirname: logDir,
       filename: 'error-%DATE%.log',
@@ -28,7 +27,14 @@ const logger = createLogger({
       datePattern: 'YYYY-MM-DD',
       maxFiles: '14d'
     })
-  ]
+  );
+}
+
+const logger = createLogger({
+  level: env.isProduction ? 'info' : 'debug',
+  format: format.combine(format.timestamp(), format.errors({ stack: true }), format.json()),
+  defaultMeta: { service: 'hr-management-system' },
+  transports: loggerTransports
 });
 
 export default logger;

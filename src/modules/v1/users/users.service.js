@@ -1,8 +1,8 @@
-import path from 'path';
 import User from '../../../model/user.model.js';
 import AppError from '../../../utils/AppError.js';
 import { createAuditLog } from '../../../common/audit/audit.service.js';
-import { enqueueFileCleanup } from '../../../utils/fileCleanup.js';
+import { cleanupStoredFile } from '../../../utils/fileCleanup.js';
+import { persistUploadedFile } from '../../../utils/uploadedFile.js';
 
 export const getProfile = async (userId) => {
   const user = await User.findById(userId).populate('role');
@@ -55,12 +55,14 @@ export const uploadAvatar = async (userId, file, req) => {
   const user = await User.findById(userId);
   if (!user) throw new AppError('User not found', 404);
 
-  if (user.avatar?.path) await enqueueFileCleanup(path.join(process.cwd(), user.avatar.path));
+  if (user.avatar) await cleanupStoredFile(user.avatar);
+
+  const storedFile = await persistUploadedFile(file, 'avatars');
 
   user.avatar = {
-    path: file.path,
-    url: `/${file.path}`,
-    publicId: file.filename
+    path: storedFile.path,
+    url: storedFile.url,
+    publicId: storedFile.publicId
   };
   await user.save();
 
@@ -79,7 +81,7 @@ export const uploadAvatar = async (userId, file, req) => {
 export const deleteAvatar = async (userId, req) => {
   const user = await User.findById(userId);
   if (!user) throw new AppError('User not found', 404);
-  if (user.avatar?.path) await enqueueFileCleanup(path.join(process.cwd(), user.avatar.path));
+  if (user.avatar) await cleanupStoredFile(user.avatar);
   user.avatar = undefined;
   await user.save();
 

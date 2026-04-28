@@ -8,8 +8,10 @@ import Attendance from '../../../model/attendance.model.js';
 import Deduction from '../../../model/deduction.model.js';
 import withTransaction from '../../../middleware/transaction.js';
 import { createAuditLog } from '../../../common/audit/audit.service.js';
-import { salaryQueue, cleanupQueue } from '../../../common/queues.js';
+import { salaryQueue } from '../../../common/queues.js';
 import { calculateMonthlySalary } from '../salary/salary.service.js';
+import { cleanupStoredFile } from '../../../utils/fileCleanup.js';
+import { persistUploadedFile } from '../../../utils/uploadedFile.js';
 
 const generateEmployeeCode = async () => {
   const total = await Staff.countDocuments().setOptions({ includeDeleted: true });
@@ -270,10 +272,13 @@ export const adjustSalary = async (staffId, month, adjustments, req) => {
 export const uploadDocument = async (staffId, file, req) => {
   const staff = await Staff.findById(staffId);
   if (!staff) throw new AppError('Staff not found', 404);
+  const storedFile = await persistUploadedFile(file, 'staff-documents');
   staff.documents.push({
-    name: file.filename,
-    path: file.path,
-    mimeType: file.mimetype
+    name: storedFile.name,
+    url: storedFile.url,
+    publicId: storedFile.publicId,
+    path: storedFile.path,
+    mimeType: storedFile.mimeType
   });
   await staff.save();
 
@@ -294,7 +299,7 @@ export const deleteDocument = async (staffId, docId, req) => {
   if (!staff) throw new AppError('Staff not found', 404);
   const document = staff.documents.id(docId);
   if (!document) throw new AppError('Document not found', 404);
-  await cleanupQueue.add({ path: document.path.replace(`${process.cwd()}/`, '') });
+  await cleanupStoredFile(document.toObject());
   document.deleteOne();
   await staff.save();
 

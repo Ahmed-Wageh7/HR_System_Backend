@@ -1,20 +1,16 @@
 import http from 'http';
 import app from './app.js';
 import env from '../config/env.service.js';
-import connectDatabase from './database/connection.js';
-import syncIndexes from './database/indexes.js';
-import seedDatabase from './database/seed.js';
+import bootstrapApp from './bootstrap.js';
 import { initSocket } from './modules/v1/notifications/socket.js';
-import { initQueues } from './common/queues.js';
 
 const start = async () => {
-  await connectDatabase();
-  await syncIndexes();
-  await seedDatabase();
-  initQueues();
+  await bootstrapApp();
 
   const server = http.createServer(app);
-  initSocket(server);
+  if (env.enableSockets) {
+    initSocket(server);
+  }
 
   server.listen(env.port, () => {
     console.log(`${env.appName} listening on port ${env.port}`);
