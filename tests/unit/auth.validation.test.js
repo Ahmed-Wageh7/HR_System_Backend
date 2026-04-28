@@ -1,23 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
 import validation from '../../src/modules/v1/auth/auth.validation.js';
 
-describe('Auth validation', () => {
-  it('accepts a strong signup password', () => {
-    const { error } = validation.signupSchema.validate({
-      name: 'Ahmed',
-      email: 'ahmed@example.com',
-      password: 'Welcome123'
-    });
-
-    expect(error).toBeUndefined();
+test('accepts a strong signup password', () => {
+  const { error } = validation.signupSchema.validate({
+    name: 'Ahmed',
+    email: 'ahmed@example.com',
+    password: 'Welcome123'
   });
 
-  it('rejects a weak signup password', () => {
-    const { error } = validation.signupSchema.validate({
-      name: 'Ahmed',
-      email: 'ahmed@example.com',
-      password: 'weakpass'
-    });
+  assert.equal(error, undefined);
+});
 
-    expect(error).toBeDefined();
+test('rejects a weak signup password', () => {
+  const { error } = validation.signupSchema.validate({
+    name: 'Ahmed',
+    email: 'ahmed@example.com',
+    password: 'weakpass'
   });
+
+  assert.notEqual(error, undefined);
 });

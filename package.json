@@ -5,21 +5,20 @@
   "description": "Production-ready HR Management System backend",
   "main": "src/main.js",
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "nodemon src/main.js",
     "start": "node src/main.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+    "test": "node --test tests/unit/*.test.js",
+    "test:coverage": "echo \"Coverage is not configured for node:test yet\" && exit 1"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "bull": "^4.11.5",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "csurf": "^1.11.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "express-mongo-sanitize": "^2.2.0",
@@ -30,7 +29,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.2",
+    "multer": "^2.0.0",
     "nodemailer": "^6.10.1",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0",
@@ -38,15 +37,6 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.1.9",
-    "supertest": "^7.1.0"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "collectCoverageFrom": [
-      "src/**/*.js",
-      "!src/main.js"
-    ]
+    "nodemon": "^3.1.9"
   }
 }
