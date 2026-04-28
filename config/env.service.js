@@ -26,8 +26,7 @@ const env = {
   },
   cookie: {
     secret: process.env.COOKIE_SECRET,
-    refreshName: process.env.COOKIE_REFRESH_NAME || 'refreshToken',
-    csrfName: process.env.COOKIE_CSRF_NAME || 'XSRF-TOKEN'
+    refreshName: process.env.COOKIE_REFRESH_NAME || 'refreshToken'
   },
   smtp: {
     host: process.env.SMTP_HOST,
@@ -89,7 +88,6 @@ env.jwtRefreshSecret = env.jwtRefresh.secret;
 env.jwtRefreshExpire = env.jwtRefresh.expire;
 env.cookieSecret = env.cookie.secret;
 env.cookieRefreshName = env.cookie.refreshName;
-env.cookieCsrfName = env.cookie.csrfName;
 env.smtpHost = env.smtp.host;
 env.smtpPort = env.smtp.port;
 env.smtpUser = env.smtp.user;

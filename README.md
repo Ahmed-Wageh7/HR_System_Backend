@@ -17,7 +17,7 @@ Node.js, Express, MongoDB backend for an HR management system with authenticatio
 - JWT access tokens and refresh token rotation
 - Role-based access control with seeded system roles
 - Staff, attendance, leaves, departments, reports, audit logs, tickets, and roles modules
-- CSRF protection, secure cookies, rate limiting, request logging, and Helmet
+- Secure cookies, rate limiting, request logging, and Helmet
 - Background jobs for email, cleanup, absence checks, and salary tasks
 - File uploads with local storage
 - API mounts available at `/api/v1` and `/api`
