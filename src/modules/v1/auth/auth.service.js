@@ -127,6 +127,7 @@ export const login = async ({ email, password }, req, res) => {
 
   return {
     accessToken,
+    refreshToken,
     user: {
       id: user._id,
       name: user.name,
