@@ -26,10 +26,6 @@ export const createStaff = async (payload, req) =>
       .setOptions({ includeDeleted: true })
       .session(session);
 
-    if (existingUser) {
-      throw new AppError("Email already registered", 409);
-    }
-
     const role = await Role.findOneAndUpdate(
       { name: "staff" },
       {
@@ -48,20 +44,49 @@ export const createStaff = async (payload, req) =>
       },
     );
 
-    const password = await bcrypt.hash("Welcome123", 12);
-    const [user] = await User.create(
-      [
+    let user = existingUser;
+    if (existingUser) {
+      const existingStaff = await Staff.findOne({ user: existingUser._id })
+        .setOptions({ includeDeleted: true })
+        .session(session);
+
+      if (existingStaff) {
+        throw new AppError("Email already registered", 409);
+      }
+
+      user = await User.findByIdAndUpdate(
+        existingUser._id,
         {
           name: payload.name,
-          email: payload.email,
           phone: payload.phone,
-          password,
           role: role._id,
           permissions: role.permissions || [],
+          isDeleted: false,
+          deletedAt: null,
         },
-      ],
-      { session },
-    );
+        {
+          new: true,
+          runValidators: true,
+          session,
+          includeDeleted: true,
+        },
+      );
+    } else {
+      const password = await bcrypt.hash("Welcome123", 12);
+      [user] = await User.create(
+        [
+          {
+            name: payload.name,
+            email: payload.email,
+            phone: payload.phone,
+            password,
+            role: role._id,
+            permissions: role.permissions || [],
+          },
+        ],
+        { session },
+      );
+    }
 
     const [staff] = await Staff.create(
       [
