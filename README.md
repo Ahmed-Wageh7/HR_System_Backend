@@ -176,7 +176,3 @@ Notes:
 - Local disk uploads are not reliable on Vercel, so production/serverless uploads now use Cloudinary.
 - Socket.IO and Bull workers are disabled by default on serverless deploys.
 - Health check remains available at `/health`.
-
-## Included Assets
-
-- Postman collection: [docs/postman/hr-system.postman_collection.json](/Users/ahmedwageh/Desktop/Hr_System_Backend/docs/postman/hr-system.postman_collection.json:1)

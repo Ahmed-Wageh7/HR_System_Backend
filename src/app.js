@@ -17,27 +17,19 @@ app.set("trust proxy", 1);
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (
-        !origin ||
-        env.allowedOrigins.length === 0 ||
-        env.allowedOrigins.includes(origin)
-      ) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`Origin ${origin} is not allowed by CORS`));
-    },
+    origin: env.allowedOrigins.length ? env.allowedOrigins : true,
     credentials: true,
   }),
 );
+
 app.use(helmet());
-app.use(requestLogger);
-// app.use(globalLimiter);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(env.cookie.secret));
 app.use(mongoSanitize());
+app.use(requestLogger);
+app.use(globalLimiter);
+
 if (!env.useCloudinaryUploads) {
   app.use("/uploads", express.static(path.join(process.cwd(), env.upload.dir)));
 }
@@ -50,9 +42,10 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res
-    .status(200)
-    .json({ status: "success", data: { uptime: process.uptime() } });
+  res.status(200).json({
+    status: "success",
+    data: { uptime: process.uptime() },
+  });
 });
 
 app.use("/api/v1", v1Router);
