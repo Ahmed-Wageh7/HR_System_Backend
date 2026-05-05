@@ -11,6 +11,13 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    referenceKey: {
+      type: String,
+      index: {
+        unique: true,
+        sparse: true
+      }
+    },
     message: {
       type: String,
       required: true

@@ -3,6 +3,7 @@ import app from './app.js';
 import env from '../config/env.service.js';
 import bootstrapApp from './bootstrap.js';
 import { initSocket } from './modules/v1/notifications/socket.js';
+import { startPayrollReminderScheduler } from './modules/v1/notifications/payrollReminder.service.js';
 
 const start = async () => {
   await bootstrapApp();
@@ -10,6 +11,10 @@ const start = async () => {
   const server = http.createServer(app);
   if (env.enableSockets) {
     initSocket(server);
+  }
+
+  if (!env.isServerless) {
+    startPayrollReminderScheduler();
   }
 
   server.listen(env.port, () => {

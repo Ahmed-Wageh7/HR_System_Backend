@@ -9,7 +9,7 @@ import Deduction from "../../../model/deduction.model.js";
 import withTransaction from "../../../middleware/transaction.js";
 import { createAuditLog } from "../../../common/audit/audit.service.js";
 import { salaryQueue } from "../../../common/queues.js";
-import { calculateMonthlySalary } from "../salary/salary.service.js";
+import { calculateMonthlySalary, payMonthlySalary } from "../salary/salary.service.js";
 import { cleanupStoredFile } from "../../../utils/fileCleanup.js";
 import { persistUploadedFile } from "../../../utils/uploadedFile.js";
 
@@ -194,26 +194,43 @@ export const softDeleteStaff = async (id, req) =>
     return staff;
   });
 
-export const restoreStaff = async (id, req) => {
-  const staff = await Staff.findByIdAndUpdate(
-    id,
-    { isDeleted: false, deletedAt: null },
-    { new: true },
-  );
+export const restoreStaff = async (id, req) =>
+  withTransaction(async (session) => {
+    const staff = await Staff.findById(id)
+      .setOptions({ includeDeleted: true })
+      .session(session);
 
-  if (!staff) throw new AppError("Staff not found", 404);
+    if (!staff) throw new AppError("Staff not found", 404);
+    if (!staff.isDeleted) throw new AppError("Staff already restored", 400);
 
-  await createAuditLog({
-    user: req.user._id,
-    action: "staff.restore",
-    resource: "Staff",
-    resourceId: staff._id,
-    after: { isDeleted: false },
-    req,
+    staff.isDeleted = false;
+    staff.deletedAt = null;
+    await staff.save({ session });
+
+    await Attendance.updateMany(
+      { staff: id },
+      { isDeleted: false, deletedAt: null },
+      { includeDeleted: true },
+    ).session(session);
+
+    await Deduction.updateMany(
+      { staff: id },
+      { isDeleted: false, deletedAt: null },
+      { includeDeleted: true },
+    ).session(session);
+
+    await createAuditLog({
+      user: req.user._id,
+      action: "staff.restore",
+      resource: "Staff",
+      resourceId: staff._id,
+      after: { isDeleted: false },
+      req,
+      session,
+    });
+
+    return staff;
   });
-
-  return staff;
-};
 
 export const getAttendance = async (staffId, queryString) => {
   const totalDocuments = await Attendance.countDocuments({ staff: staffId });
@@ -322,44 +339,9 @@ export const calculateSalary = (staffId, month) =>
   calculateMonthlySalary(staffId, month);
 
 export const paySalary = async (staffId, month, req) =>
-  withTransaction(async (session) => {
-    const result = await calculateMonthlySalary(staffId, month);
-
-    const staff = await Staff.findById(staffId).session(session);
-    const existing = staff.monthlyReports.find((r) => r.month === month);
-
-    if (existing && existing.isPaid)
-      throw new AppError("Salary already paid for this month", 400);
-
-    if (existing) {
-      Object.assign(existing, {
-        ...result,
-        month,
-        isPaid: true,
-        paidAt: new Date(),
-      });
-    } else {
-      staff.monthlyReports.push({
-        ...result,
-        month,
-        isPaid: true,
-        paidAt: new Date(),
-      });
-    }
-
-    await staff.save({ session });
-
-    await createAuditLog({
-      user: req.user._id,
-      action: "salary.pay",
-      resource: "Staff",
-      resourceId: staff._id,
-      after: result,
-      req,
-      session,
-    });
-
-    return result;
+  payMonthlySalary(staffId, month, {
+    actorUserId: req.user._id,
+    req,
   });
 
 export const adjustSalary = async (staffId, month, adjustments, req) => {
