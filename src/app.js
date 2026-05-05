@@ -15,12 +15,24 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+const allowedOrigins = env.CLIENT_URL
+  ? env.CLIENT_URL.split(",").map((o) => o.trim())
+  : [];
+
 app.use(
   cors({
-    origin: env.allowedOrigins.length ? env.allowedOrigins : true,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
+
+app.options("*", cors());
 
 app.use(helmet());
 app.use(express.json({ limit: "1mb" }));
