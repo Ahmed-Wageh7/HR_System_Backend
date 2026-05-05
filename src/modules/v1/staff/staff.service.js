@@ -13,51 +13,82 @@ import { calculateMonthlySalary } from "../salary/salary.service.js";
 import { cleanupStoredFile } from "../../../utils/fileCleanup.js";
 import { persistUploadedFile } from "../../../utils/uploadedFile.js";
 
-const generateEmployeeCode = async () => {
-  const total = await Staff.countDocuments();
+const generateEmployeeCode = async (session) => {
+  const total = await Staff.countDocuments({}, { session });
   return `EMP-${String(total + 1).padStart(5, "0")}`;
 };
 
-export const createStaff = async (payload, req) => {
-  let role = await Role.findOne({ name: "staff" });
-  if (!role) {
-    role = await Role.create({
-      name: "staff",
-      description: "Staff member",
-      isSystem: true,
-      permissions: ["attendance:write", "leave:create", "leave:read"],
+export const createStaff = async (payload, req) =>
+  withTransaction(async (session) => {
+    const existingUser = await User.findOne({
+      email: payload.email.toLowerCase(),
+    })
+      .setOptions({ includeDeleted: true })
+      .session(session);
+
+    if (existingUser) {
+      throw new AppError("Email already registered", 409);
+    }
+
+    const role = await Role.findOneAndUpdate(
+      { name: "staff" },
+      {
+        $setOnInsert: {
+          name: "staff",
+          description: "Staff member",
+          isSystem: true,
+          permissions: ["attendance:write", "leave:create", "leave:read"],
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+        session,
+      },
+    );
+
+    const password = await bcrypt.hash("Welcome123", 12);
+    const [user] = await User.create(
+      [
+        {
+          name: payload.name,
+          email: payload.email,
+          phone: payload.phone,
+          password,
+          role: role._id,
+          permissions: role.permissions || [],
+        },
+      ],
+      { session },
+    );
+
+    const [staff] = await Staff.create(
+      [
+        {
+          user: user._id,
+          employeeCode: await generateEmployeeCode(session),
+          dailySalary: payload.dailySalary,
+          joinDate: payload.joinDate ? new Date(payload.joinDate) : new Date(),
+          department: payload.department || null,
+          position: payload.position,
+        },
+      ],
+      { session },
+    );
+
+    await createAuditLog({
+      user: req.user._id,
+      action: "staff.create",
+      resource: "Staff",
+      resourceId: staff._id,
+      after: staff.toObject(),
+      req,
+      session,
     });
-  }
 
-  const user = await User.create({
-    name: payload.name,
-    email: payload.email,
-    phone: payload.phone,
-    password: await bcrypt.hash("Welcome123", 12),
-    role: role._id,
-    permissions: role.permissions || [],
+    return Staff.findById(staff._id).session(session).populate("user department");
   });
-
-  const staff = await Staff.create({
-    user: user._id,
-    employeeCode: await generateEmployeeCode(),
-    dailySalary: payload.dailySalary,
-    joinDate: payload.joinDate ? new Date(payload.joinDate) : new Date(),
-    department: payload.department || null,
-    position: payload.position,
-  });
-
-  await createAuditLog({
-    user: req.user._id,
-    action: "staff.create",
-    resource: "Staff",
-    resourceId: staff._id,
-    after: staff.toObject(),
-    req,
-  });
-
-  return Staff.findById(staff._id).populate("user department");
-};
 
 export const listStaff = async (queryString) => {
   const totalDocuments = await Staff.countDocuments();
