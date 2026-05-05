@@ -19,8 +19,15 @@ const generateEmployeeCode = async () => {
 };
 
 export const createStaff = async (payload, req) => {
-  const role = await Role.findOne({ name: "staff" });
-  if (!role) throw new AppError("Staff role not found", 500);
+  let role = await Role.findOne({ name: "staff" });
+  if (!role) {
+    role = await Role.create({
+      name: "staff",
+      description: "Staff member",
+      isSystem: true,
+      permissions: ["attendance:write", "leave:create", "leave:read"],
+    });
+  }
 
   const user = await User.create({
     name: payload.name,
