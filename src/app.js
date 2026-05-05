@@ -33,7 +33,7 @@ app.use(
 );
 app.use(helmet());
 app.use(requestLogger);
-app.use(globalLimiter);
+// app.use(globalLimiter);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(env.cookie.secret));
