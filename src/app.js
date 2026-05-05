@@ -15,26 +15,21 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-const allowedOrigins = env.CLIENT_URL
-  ? env.CLIENT_URL.split(",").map((o) => o.trim())
-  : [];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-
-      const isAllowed = allowedOrigins.some((o) => origin.startsWith(o));
-
-      if (isAllowed) return callback(null, true);
-
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: true,
     credentials: true,
   }),
 );
 
 app.options("*", cors());
+
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(helmet());
 app.use(express.json({ limit: "1mb" }));
