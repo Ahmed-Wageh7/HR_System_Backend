@@ -15,39 +15,46 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin);
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
+const allowedOrigins = [
+  "http://localhost:4200",
+  "https://hr-system-frontend-three.vercel.app",
+];
 
 app.use(
   cors({
-    origin: true,
+    origin: function (origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+
     credentials: true,
+
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   }),
 );
+
+app.options("*", cors());
 
 app.use(helmet());
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser(env.cookie.secret));
+
 app.use(mongoSanitize());
 
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
-
 app.use(requestLogger);
+
 app.use(globalLimiter);
 
 if (!env.useCloudinaryUploads) {
@@ -64,11 +71,14 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "success",
-    data: { uptime: process.uptime() },
+    data: {
+      uptime: process.uptime(),
+    },
   });
 });
 
 app.use("/api/v1", v1Router);
+
 app.use("/api", v1Router);
 
 app.use("/api/:version", (req, res) => {
