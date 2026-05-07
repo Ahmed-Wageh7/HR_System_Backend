@@ -13,6 +13,13 @@ test('normalizeOrigin trims whitespace and trailing slashes', () => {
   );
 });
 
+test('normalizeOrigin lowercases host and scheme', () => {
+  assert.equal(
+    normalizeOrigin('HTTPS://HR-SYSTEM-FRONTEND-THREE.VERCEL.APP'),
+    'https://hr-system-frontend-three.vercel.app'
+  );
+});
+
 test('parseAllowedOrigins returns normalized origin values', () => {
   assert.deepEqual(parseAllowedOrigins(' http://localhost:4200/, https://hr-system-frontend-*.vercel.app '), [
     'http://localhost:4200',
