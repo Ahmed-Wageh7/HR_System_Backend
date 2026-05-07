@@ -15,34 +15,36 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-const allowedOrigins = [
-  "http://localhost:4200",
-  "https://hr-system-frontend-three.vercel.app",
-];
+const allowedOrigins =
+  env.allowedOrigins.length > 0
+    ? env.allowedOrigins
+    : ["http://localhost:4200", "http://localhost:5173"];
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new AppError(`Origin ${origin} is not allowed by CORS`, 403));
+  },
+
+  credentials: true,
+
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
 
 app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    },
-
-    credentials: true,
-
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  }),
+  cors(corsOptions),
 );
 
-app.options("*", cors());
+app.options("*", cors(corsOptions));
 
 app.use(helmet());
 
