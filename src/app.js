@@ -9,16 +9,21 @@ import requestLogger from "./middleware/requestLogger.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { globalLimiter } from "./middleware/rateLimiter.js";
 import v1Router from "./modules/v1/index.js";
+import { isOriginAllowed } from "./utils/cors.js";
 import path from "path";
 
 const app = express();
 
 app.set("trust proxy", 1);
 
-const allowedOrigins =
-  env.allowedOrigins.length > 0
-    ? env.allowedOrigins
-    : ["http://localhost:4200", "http://localhost:5173"];
+const allowedOrigins = Array.from(
+  new Set([
+    "http://localhost:4200",
+    "http://localhost:5173",
+    "https://hr-system-frontend-*.vercel.app",
+    ...env.allowedOrigins,
+  ]),
+);
 
 const corsOptions = {
   origin(origin, callback) {
@@ -26,7 +31,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin, allowedOrigins)) {
       return callback(null, true);
     }
 

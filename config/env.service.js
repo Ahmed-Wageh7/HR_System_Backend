@@ -1,5 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
+import { parseAllowedOrigins } from '../src/utils/cors.js';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -56,10 +57,7 @@ env.isProduction = env.nodeEnv === 'production';
 env.isDevelopment = env.nodeEnv === 'development';
 env.isVercel = process.env.VERCEL === '1' || Boolean(env.vercelUrl);
 env.isServerless = env.isVercel || process.env.SERVERLESS === 'true';
-env.allowedOrigins = env.clientUrl
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+env.allowedOrigins = parseAllowedOrigins(env.clientUrl);
 env.hasCloudinaryConfig = Boolean(
   env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret
 );

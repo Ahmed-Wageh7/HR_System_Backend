@@ -1,0 +1,48 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  isOriginAllowed,
+  normalizeOrigin,
+  parseAllowedOrigins
+} from '../../src/utils/cors.js';
+
+test('normalizeOrigin trims whitespace and trailing slashes', () => {
+  assert.equal(
+    normalizeOrigin(' https://hr-system-frontend-three.vercel.app/ '),
+    'https://hr-system-frontend-three.vercel.app'
+  );
+});
+
+test('parseAllowedOrigins returns normalized origin values', () => {
+  assert.deepEqual(parseAllowedOrigins(' http://localhost:4200/, https://hr-system-frontend-*.vercel.app '), [
+    'http://localhost:4200',
+    'https://hr-system-frontend-*.vercel.app'
+  ]);
+});
+
+test('isOriginAllowed matches exact origins', () => {
+  assert.equal(
+    isOriginAllowed('https://hr-system-frontend-three.vercel.app', [
+      'https://hr-system-frontend-three.vercel.app'
+    ]),
+    true
+  );
+});
+
+test('isOriginAllowed matches wildcard Vercel origins', () => {
+  assert.equal(
+    isOriginAllowed('https://hr-system-frontend-jxee4fr0r-ahmed-wageh7s-projects.vercel.app', [
+      'https://hr-system-frontend-*.vercel.app'
+    ]),
+    true
+  );
+});
+
+test('isOriginAllowed rejects unknown origins', () => {
+  assert.equal(
+    isOriginAllowed('https://another-project.vercel.app', [
+      'https://hr-system-frontend-*.vercel.app'
+    ]),
+    false
+  );
+});
