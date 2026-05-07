@@ -10,6 +10,7 @@ import errorHandler from "./middleware/errorHandler.js";
 import { globalLimiter } from "./middleware/rateLimiter.js";
 import v1Router from "./modules/v1/index.js";
 import { isOriginAllowed } from "./utils/cors.js";
+import logger from "./utils/logger.js";
 import path from "path";
 
 const app = express();
@@ -20,6 +21,7 @@ const allowedOrigins = Array.from(
   new Set([
     "http://localhost:4200",
     "http://localhost:5173",
+    "https://hr-system-frontend-three.vercel.app",
     "https://hr-system-frontend-*.vercel.app",
     ...env.allowedOrigins,
   ]),
@@ -35,10 +37,16 @@ const corsOptions = {
       return callback(null, true);
     }
 
+    logger.warn("CORS_ORIGIN_REJECTED", {
+      origin,
+      allowedOrigins,
+    });
+
     return callback(new AppError(`Origin ${origin} is not allowed by CORS`, 403));
   },
 
   credentials: true,
+  optionsSuccessStatus: 204,
 
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 

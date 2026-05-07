@@ -87,6 +87,7 @@ Important values:
 - `PORT`
 - `NODE_ENV`
 - `CLIENT_URL`
+- `ALLOWED_ORIGINS`
 - `MONGODB_URI`
 - `MONGODB_LOCAL_URI`
 - `JWT_SECRET`
@@ -163,7 +164,8 @@ Use these environment variables in Vercel:
 - `JWT_SECRET=<strong secret>`
 - `JWT_REFRESH_SECRET=<strong secret>`
 - `COOKIE_SECRET=<strong secret>`
-- `CLIENT_URL=https://your-frontend-domain.vercel.app`
+- `CLIENT_URL=https://hr-system-frontend-three.vercel.app`
+- `ALLOWED_ORIGINS=https://hr-system-frontend-three.vercel.app,https://hr-system-frontend-*.vercel.app`
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 - `ENABLE_QUEUES=false`
@@ -176,3 +178,4 @@ Notes:
 - Local disk uploads are not reliable on Vercel, so production/serverless uploads now use Cloudinary.
 - Socket.IO and Bull workers are disabled by default on serverless deploys.
 - Health check remains available at `/health`.
+- `CLIENT_URL` is used for frontend links like password reset URLs, while `ALLOWED_ORIGINS` controls which browser origins may call the API.

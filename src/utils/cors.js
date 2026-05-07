@@ -2,7 +2,9 @@ const TRAILING_SLASHES_REGEX = /\/+$/;
 const REGEX_ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
 
 export const normalizeOrigin = (origin) =>
-  typeof origin === "string" ? origin.trim().replace(TRAILING_SLASHES_REGEX, "") : "";
+  typeof origin === "string"
+    ? origin.trim().toLowerCase().replace(TRAILING_SLASHES_REGEX, "")
+    : "";
 
 export const parseAllowedOrigins = (origins) =>
   String(origins || "")

@@ -9,12 +9,17 @@ const toNumber = (value, def) => {
   return isNaN(n) ? def : n;
 };
 
+const configuredClientOrigins = parseAllowedOrigins(process.env.CLIENT_URL || 'http://localhost:3000');
+const configuredAllowedOrigins = parseAllowedOrigins(
+  process.env.ALLOWED_ORIGINS || process.env.CORS_ALLOWED_ORIGINS || process.env.CLIENT_URL
+);
+
 const env = {
   port: toNumber(process.env.PORT, 3000),
   nodeEnv: process.env.NODE_ENV || 'development',
   appName: process.env.APP_NAME || 'HR Management System',
   apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:3000',
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+  clientUrl: configuredClientOrigins[0] || 'http://localhost:3000',
   mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/hr_system',
   mongoLocalUri: process.env.MONGODB_LOCAL_URI || 'mongodb://127.0.0.1:27017/hr_system',
   jwt: {
@@ -57,7 +62,9 @@ env.isProduction = env.nodeEnv === 'production';
 env.isDevelopment = env.nodeEnv === 'development';
 env.isVercel = process.env.VERCEL === '1' || Boolean(env.vercelUrl);
 env.isServerless = env.isVercel || process.env.SERVERLESS === 'true';
-env.allowedOrigins = parseAllowedOrigins(env.clientUrl);
+env.allowedOrigins = configuredAllowedOrigins.length
+  ? configuredAllowedOrigins
+  : configuredClientOrigins;
 env.hasCloudinaryConfig = Boolean(
   env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret
 );
