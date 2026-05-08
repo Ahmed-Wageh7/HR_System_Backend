@@ -1,5 +1,6 @@
 import asyncHandler from '../../../utils/asyncHandler.js';
 import { sendSuccess } from '../../../utils/response.js';
+import AppError from '../../../utils/AppError.js';
 import authService from './auth.service.js';
 
 export const signup = asyncHandler(async (req, res) => {
@@ -8,8 +9,7 @@ export const signup = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const data = await authService.login(req.body, req, res);
-  return sendSuccess(res, 200, data);
+  throw new AppError('Login has been disabled for this deployment', 410);
 });
 
 export const refreshToken = asyncHandler(async (req, res) => {
