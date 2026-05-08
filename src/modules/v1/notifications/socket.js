@@ -2,19 +2,12 @@ import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 import env from '../../../../config/env.service.js';
 import Message from '../../../model/message.model.js';
-import { isOriginAllowed } from '../../../utils/cors.js';
+import { buildAllowedOrigins, isOriginAllowed } from '../../../utils/cors.js';
 
 let ioInstance;
 
 const connectedAdmins = new Set();
-const allowedOrigins = Array.from(
-  new Set([
-    'http://localhost:4200',
-    'http://localhost:5173',
-    'https://hr-system-frontend-*.vercel.app',
-    ...env.allowedOrigins
-  ])
-);
+const allowedOrigins = buildAllowedOrigins(env.allowedOrigins);
 
 export const initSocket = (server) => {
   ioInstance = new Server(server, {

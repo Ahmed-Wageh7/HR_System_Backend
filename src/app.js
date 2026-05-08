@@ -10,13 +10,22 @@ import errorHandler from "./middleware/errorHandler.js";
 import { globalLimiter } from "./middleware/rateLimiter.js";
 import v1Router from "./modules/v1/index.js";
 import path from "path";
+import { buildAllowedOrigins, isOriginAllowed } from "./utils/cors.js";
 
 const app = express();
 
 app.set("trust proxy", 1);
 
+const allowedOrigins = buildAllowedOrigins(env.allowedOrigins);
+
 const corsOptions = {
-  origin: true,
+  origin(origin, callback) {
+    if (isOriginAllowed(origin, allowedOrigins)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
   credentials: true,
   optionsSuccessStatus: 204,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildAllowedOrigins,
+  DEFAULT_ALLOWED_ORIGINS,
   isOriginAllowed,
   normalizeOrigin,
   parseAllowedOrigins
@@ -25,6 +27,30 @@ test('parseAllowedOrigins returns normalized origin values', () => {
     'http://localhost:4200',
     'https://hr-system-frontend-*.vercel.app'
   ]);
+});
+
+test('buildAllowedOrigins merges defaults with configured origins without duplicates', () => {
+  const allowedOrigins = buildAllowedOrigins([
+    'https://hr-system-frontend-three.vercel.app',
+    'https://custom-frontend.example.com'
+  ]);
+
+  assert.equal(
+    allowedOrigins.includes('https://custom-frontend.example.com'),
+    true
+  );
+  assert.equal(
+    allowedOrigins.includes('https://hr-system-frontend-three.vercel.app'),
+    true
+  );
+  assert.equal(
+    allowedOrigins.filter((origin) => origin === 'https://hr-system-frontend-three.vercel.app').length,
+    1
+  );
+  assert.equal(
+    DEFAULT_ALLOWED_ORIGINS.every((origin) => allowedOrigins.includes(origin)),
+    true
+  );
 });
 
 test('isOriginAllowed matches exact origins', () => {
