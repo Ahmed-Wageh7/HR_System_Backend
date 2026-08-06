@@ -119,8 +119,10 @@ if (env.isProduction) {
 
 env.cookies = {
   httpOnly: true,
-  sameSite: env.isProduction ? 'none' : 'lax',
-  secure: env.isProduction
+  sameSite: 'lax',
+  secure: env.isProduction,
+  path: '/',
+  maxAge: 7 * 24 * 60 * 60 * 1000
 };
 
 export default env;

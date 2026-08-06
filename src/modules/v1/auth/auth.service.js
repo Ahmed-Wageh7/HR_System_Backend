@@ -18,10 +18,17 @@ import { hashValue, randomToken } from "../../../utils/security.js";
 import logger from "../../../utils/logger.js";
 
 const buildCookieOptions = () => ({
-  httpOnly: true,
-  sameSite: "none",
-  secure: true,
+  httpOnly: env.cookies.httpOnly,
+  secure: env.cookies.secure,
+  sameSite: env.cookies.sameSite,
+  path: env.cookies.path,
+  maxAge: env.cookies.maxAge,
 });
+
+const buildClearCookieOptions = () => {
+  const { maxAge, ...options } = buildCookieOptions();
+  return options;
+};
 
 const issueRefreshPair = async (user, req, family, replacedBy) => {
   const refreshToken = signRefreshToken({ sub: user._id, family });
@@ -136,7 +143,6 @@ export const login = async ({ email, password }, req, res) => {
 
   return {
     accessToken,
-    refreshToken,
     user: {
       id: user._id,
       name: user.name,
@@ -194,18 +200,29 @@ export const refresh = async (tokenDoc, refreshToken, req, res) => {
   return { accessToken };
 };
 
-export const logout = async (tokenDoc, req, res) => {
-  tokenDoc.revokedAt = new Date();
-  await tokenDoc.save();
-  res.clearCookie(env.cookie.refreshName, buildCookieOptions());
+export const logout = async (req, res) => {
+  const refreshToken = req.cookies?.[env.cookie.refreshName];
+  let tokenDoc;
 
-  await createAuditLog({
-    user: tokenDoc.user,
-    action: "logout",
-    resource: "RefreshToken",
-    resourceId: tokenDoc._id,
-    req,
-  });
+  if (refreshToken) {
+    tokenDoc = await RefreshToken.findOneAndUpdate(
+      { token: hashToken(refreshToken), revokedAt: null },
+      { revokedAt: new Date() },
+      { new: true },
+    );
+  }
+
+  res.clearCookie(env.cookie.refreshName, buildClearCookieOptions());
+
+  if (tokenDoc) {
+    await createAuditLog({
+      user: tokenDoc.user,
+      action: "logout",
+      resource: "RefreshToken",
+      resourceId: tokenDoc._id,
+      req,
+    });
+  }
 };
 
 export const forgotPassword = async ({ email }, req) => {
