@@ -24,7 +24,7 @@ const env = {
   mongoLocalUri: process.env.MONGODB_LOCAL_URI || 'mongodb://127.0.0.1:27017/hr_system',
   jwt: {
     secret: process.env.JWT_SECRET,
-    expire: process.env.JWT_EXPIRE || '15m'
+    expire: process.env.JWT_EXPIRE || '10s'
   },
   jwtRefresh: {
     secret: process.env.JWT_REFRESH_SECRET,
@@ -119,8 +119,8 @@ if (env.isProduction) {
 
 env.cookies = {
   httpOnly: true,
-  sameSite: 'lax',
-  secure: env.isProduction,
+  secure: true,
+  sameSite: 'none',
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000
 };

@@ -9,7 +9,7 @@ import { getEffectivePermissions } from '../common/auth/role-permissions.service
 const createTokenHash = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const getAccessTokenSecret = () => process.env.JWT_SECRET || env.jwt?.secret || env.jwtSecret;
 const getRefreshTokenSecret = () => process.env.JWT_REFRESH_SECRET || env.jwtRefresh?.secret || env.jwtRefreshSecret;
-const getAccessTokenExpiry = () => process.env.JWT_EXPIRE || env.jwt?.expire || env.jwtExpire || '15m';
+const getAccessTokenExpiry = () => process.env.JWT_EXPIRE || env.jwt?.expire || env.jwtExpire || '10s';
 const getRefreshTokenExpiry = () => process.env.JWT_REFRESH_EXPIRE || env.jwtRefresh?.expire || env.jwtRefreshExpire || '7d';
 
 export const hashToken = createTokenHash;
