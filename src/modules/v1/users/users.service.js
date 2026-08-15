@@ -1,13 +1,15 @@
 import User from '../../../model/user.model.js';
 import AppError from '../../../utils/AppError.js';
 import { createAuditLog } from '../../../common/audit/audit.service.js';
+import { resolveUserRbacContext } from '../../../common/auth/role-permissions.service.js';
 import { cleanupStoredFile } from '../../../utils/fileCleanup.js';
 import { persistUploadedFile } from '../../../utils/uploadedFile.js';
 
 export const getProfile = async (userId) => {
   const user = await User.findById(userId).populate('role');
   if (!user) throw new AppError('User not found', 404);
-  return user;
+  const { user: resolvedUser } = await resolveUserRbacContext(user, { persist: true });
+  return resolvedUser;
 };
 
 export const updateProfile = async (userId, payload, req) => {
@@ -27,7 +29,8 @@ export const updateProfile = async (userId, payload, req) => {
     req
   });
 
-  return user;
+  const { user: resolvedUser } = await resolveUserRbacContext(user, { persist: true });
+  return resolvedUser;
 };
 
 export const softDeleteProfile = async (userId, req) => {

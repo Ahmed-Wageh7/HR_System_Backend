@@ -4,7 +4,10 @@ import env from '../../config/env.service.js';
 import AppError from '../utils/AppError.js';
 import User from '../model/user.model.js';
 import RefreshToken from '../model/refreshToken.model.js';
-import { getEffectivePermissions } from '../common/auth/role-permissions.service.js';
+import {
+  getEffectivePermissions,
+  resolveUserRbacContext
+} from '../common/auth/role-permissions.service.js';
 
 const createTokenHash = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const getAccessTokenSecret = () => process.env.JWT_SECRET || env.jwt?.secret || env.jwtSecret;
@@ -18,7 +21,7 @@ export const signAccessToken = (user) =>
   jwt.sign(
     {
       sub: user._id,
-      role: user.role?.name || user.roleName || 'user',
+      role: user.role?.name || user.roleName || null,
       permissions: getEffectivePermissions(user, user.role)
     },
     getAccessTokenSecret(),
@@ -42,8 +45,14 @@ export const auth = async (req, res, next) => {
       return next(new AppError('User no longer exists or is inactive', 401));
     }
 
-    req.user = user;
-    req.auth = decoded;
+    const { user: resolvedUser, role, permissions } = await resolveUserRbacContext(user, { persist: true });
+
+    req.user = resolvedUser;
+    req.auth = {
+      ...decoded,
+      role: role?.name || null,
+      permissions
+    };
     return next();
   } catch (error) {
     return next(new AppError('Invalid or expired access token', 401));

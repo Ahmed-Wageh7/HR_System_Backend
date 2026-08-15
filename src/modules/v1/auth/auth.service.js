@@ -8,7 +8,7 @@ import Role from "../../../model/role.model.js";
 import RefreshToken from "../../../model/refreshToken.model.js";
 import { emailQueue } from "../../../common/queues.js";
 import { createAuditLog } from "../../../common/audit/audit.service.js";
-import { getEffectivePermissions } from "../../../common/auth/role-permissions.service.js";
+import { resolveUserRbacContext } from "../../../common/auth/role-permissions.service.js";
 import {
   hashToken,
   signAccessToken,
@@ -89,9 +89,14 @@ export const signup = async (payload, req, res) => {
     });
 
   const populatedUser = await getUserWithRole(user._id);
-  const accessToken = signAccessToken(populatedUser);
+  const {
+    user: resolvedUser,
+    role,
+    permissions,
+  } = await resolveUserRbacContext(populatedUser);
+  const accessToken = signAccessToken(resolvedUser);
   const family = uuidv4();
-  const refreshToken = await issueRefreshPair(populatedUser, req, family);
+  const refreshToken = await issueRefreshPair(resolvedUser, req, family);
 
   res.cookie(env.cookie.refreshName, refreshToken, buildCookieOptions());
 
@@ -107,11 +112,11 @@ export const signup = async (payload, req, res) => {
   return {
     accessToken,
     user: {
-      id: populatedUser._id,
-      name: populatedUser.name,
-      email: populatedUser.email,
-      role: populatedUser.role?.name,
-      permissions: getEffectivePermissions(populatedUser, populatedUser.role),
+      id: resolvedUser._id,
+      name: resolvedUser.name,
+      email: resolvedUser.email,
+      role: role?.name,
+      permissions,
     },
   };
 };
@@ -126,29 +131,34 @@ export const login = async ({ email, password }, req, res) => {
   const validPassword = await bcrypt.compare(password, user.password);
   if (!validPassword) throw new AppError("Invalid credentials", 401);
 
-  const accessToken = signAccessToken(user);
+  const {
+    user: resolvedUser,
+    role,
+    permissions,
+  } = await resolveUserRbacContext(user, { persist: true });
+  const accessToken = signAccessToken(resolvedUser);
   const family = uuidv4();
-  const refreshToken = await issueRefreshPair(user, req, family);
+  const refreshToken = await issueRefreshPair(resolvedUser, req, family);
 
   res.cookie(env.cookie.refreshName, refreshToken, buildCookieOptions());
 
   await createAuditLog({
-    user: user._id,
+    user: resolvedUser._id,
     action: "login",
     resource: "User",
-    resourceId: user._id,
-    after: { email: user.email },
+    resourceId: resolvedUser._id,
+    after: { email: resolvedUser.email },
     req,
   });
 
   return {
     accessToken,
     user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role?.name,
-      permissions: getEffectivePermissions(user, user.role),
+      id: resolvedUser._id,
+      name: resolvedUser.name,
+      email: resolvedUser.email,
+      role: role?.name,
+      permissions,
     },
   };
 };
@@ -169,8 +179,12 @@ export const refresh = async (tokenDoc, refreshToken, req, res) => {
   if (!user || user.isDeleted || !user.isActive)
     throw new AppError("User no longer available", 401);
 
+  const { user: resolvedUser } = await resolveUserRbacContext(user, {
+    persist: true,
+  });
+
   const nextRefreshToken = signRefreshToken({
-    sub: user._id,
+    sub: resolvedUser._id,
     family: tokenDoc.family,
   });
   tokenDoc.replacedBy = hashToken(nextRefreshToken);
@@ -179,18 +193,18 @@ export const refresh = async (tokenDoc, refreshToken, req, res) => {
   const decoded = jwt.decode(nextRefreshToken);
   await RefreshToken.create({
     token: hashToken(nextRefreshToken),
-    user: user._id,
+    user: resolvedUser._id,
     family: tokenDoc.family,
     expiresAt: new Date(decoded.exp * 1000),
     userAgent: req.headers["user-agent"],
     ip: req.ip,
   });
 
-  const accessToken = signAccessToken(user);
+  const accessToken = signAccessToken(resolvedUser);
   res.cookie(env.cookie.refreshName, nextRefreshToken, buildCookieOptions());
 
   await createAuditLog({
-    user: user._id,
+    user: resolvedUser._id,
     action: "token.refresh",
     resource: "RefreshToken",
     resourceId: tokenDoc._id,
